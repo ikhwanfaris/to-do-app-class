@@ -14,12 +14,12 @@ class TodoItem extends StatelessWidget {
 
   final Todo todo;
   final onTodoChanged;
-
+//Function
   TextStyle? _getTextStyle(bool checked) {
     if (!checked) return null;
 
     return TextStyle(
-      color: Colors.black54,
+      color: Colors.yellow,
       decoration: TextDecoration.lineThrough,
     );
   }
@@ -38,11 +38,13 @@ class TodoItem extends StatelessWidget {
   }
 }
 
+//Widget
 class TodoList extends StatefulWidget {
   @override
   _TodoListState createState() => new _TodoListState();
 }
 
+// Widget
 class _TodoListState extends State<TodoList> {
   final TextEditingController _textFieldController = TextEditingController();
   final List<Todo> _todos = <Todo>[];
@@ -51,17 +53,20 @@ class _TodoListState extends State<TodoList> {
   Widget build(BuildContext context) {
     return new Scaffold(
       appBar: new AppBar(
-        title: new Text('My Todo list'),
+        title: new Text('My To-Do List'),
       ),
-      body: ListView(
-        padding: EdgeInsets.symmetric(vertical: 8.0),
-        children: _todos.map((Todo todo) {
-          return TodoItem(
-            todo: todo,
-            onTodoChanged: _handleTodoChange,
-          );
-        }).toList(),
-      ),
+      //Conditioning
+      body: _todos.length != 0
+          ? ListView(
+              padding: EdgeInsets.symmetric(vertical: 8.0),
+              children: _todos.map((Todo todo) {
+                return TodoItem(
+                  todo: todo,
+                  onTodoChanged: _handleTodoChange,
+                );
+              }).toList(),
+            )
+          : Text("Nothing to show"),
       floatingActionButton: FloatingActionButton(
           onPressed: () => _displayDialog(),
           tooltip: 'Add Item',
@@ -69,12 +74,14 @@ class _TodoListState extends State<TodoList> {
     );
   }
 
+//Function
   void _handleTodoChange(Todo todo) {
     setState(() {
       todo.checked = !todo.checked;
     });
   }
 
+//Function
   void _addTodoItem(String name) {
     setState(() {
       _todos.add(Todo(name: name, checked: false));
@@ -82,6 +89,7 @@ class _TodoListState extends State<TodoList> {
     _textFieldController.clear();
   }
 
+//Function
   Future<void> _displayDialog() async {
     return showDialog<void>(
       context: context,
@@ -108,10 +116,13 @@ class _TodoListState extends State<TodoList> {
   }
 }
 
+//Main widget
 class TodoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return new MaterialApp(
+      theme:
+          ThemeData(brightness: Brightness.dark, primaryColor: Colors.blueGrey),
       title: 'Todo list',
       home: new TodoList(),
     );
