@@ -1,9 +1,22 @@
+import 'dart:convert';
 import 'package:flutter/material.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
 class Todo {
+  String? name;
+  bool? checked;
   Todo({required this.name, required this.checked});
-  final String name;
-  bool checked;
+
+  Todo.fromMap(Map map) {
+    this.name = map['name'];
+    this.checked = map['checked'];
+  }
+  Map toMap() {
+    return {
+      'name': this.name,
+      'checked': this.checked,
+    };
+  }
 }
 
 class TodoItem extends StatelessWidget {
@@ -31,9 +44,9 @@ class TodoItem extends StatelessWidget {
         onTodoChanged(todo);
       },
       leading: CircleAvatar(
-        child: Text(todo.name[0]),
+        child: Text(todo.name![0]),
       ),
-      title: Text(todo.name, style: _getTextStyle(todo.checked)),
+      title: Text(todo.name!, style: _getTextStyle(todo.checked!)),
     );
   }
 }
@@ -44,10 +57,22 @@ class TodoList extends StatefulWidget {
   _TodoListState createState() => new _TodoListState();
 }
 
+Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
+
 // Widget
 class _TodoListState extends State<TodoList> {
   final TextEditingController _textFieldController = TextEditingController();
-  final List<Todo> _todos = <Todo>[];
+  List<Todo> _todos = <Todo>[];
+
+  @override
+  // ignore: must_call_super
+  initState() {
+    initApp();
+  }
+
+  initApp() async {
+    loadData();
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -77,16 +102,53 @@ class _TodoListState extends State<TodoList> {
 //Function
   void _handleTodoChange(Todo todo) {
     setState(() {
-      todo.checked = !todo.checked;
+      todo.checked = !todo.checked!;
     });
   }
 
 //Function
-  void _addTodoItem(String name) {
-    setState(() {
-      _todos.add(Todo(name: name, checked: false));
-    });
+  void _addTodoItem(String? name) {
+    print("name " + name.toString());
+    if (name == "") {
+      final snackBar = SnackBar(
+        content: const Text('Insert To Do Item Properly'),
+        action: SnackBarAction(
+          label: 'Undo',
+          onPressed: () {
+            // Some code to undo the change.
+          },
+        ),
+      );
+
+      // Find the ScaffoldMessenger in the widget tree
+      // and use it to show a SnackBar.
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    } else {
+      setState(() {
+        _todos.add(Todo(name: name, checked: false));
+      });
+
+      saveData();
+    }
+
     _textFieldController.clear();
+  }
+
+  saveData() async {
+    SharedPreferences _prefs = await SharedPreferences.getInstance();
+    List<String> spList =
+        _todos.map((item) => json.encode(item.toMap())).toList();
+    print(spList);
+    await _prefs.setStringList('list', spList);
+  }
+
+  loadData() async {
+    SharedPreferences _prefs = await SharedPreferences.getInstance();
+    List<String>? spList = _prefs.getStringList('list');
+
+    setState(() {
+      _todos = spList!.map((item) => Todo.fromMap(json.decode(item))).toList();
+    });
   }
 
 //Function
@@ -96,10 +158,10 @@ class _TodoListState extends State<TodoList> {
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
         return AlertDialog(
-          title: const Text('Add a new todo item'),
+          title: const Text('Add a new To Do item'),
           content: TextField(
             controller: _textFieldController,
-            decoration: const InputDecoration(hintText: 'Type your new todo'),
+            decoration: const InputDecoration(hintText: 'Type your new To Do'),
           ),
           actions: <Widget>[
             TextButton(
