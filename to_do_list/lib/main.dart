@@ -145,10 +145,12 @@ class _TodoListState extends State<TodoList> {
   loadData() async {
     SharedPreferences _prefs = await SharedPreferences.getInstance();
     List<String>? spList = _prefs.getStringList('list');
-
-    setState(() {
-      _todos = spList!.map((item) => Todo.fromMap(json.decode(item))).toList();
-    });
+    if (spList == null) {
+    } else {
+      setState(() {
+        _todos = spList.map((item) => Todo.fromMap(json.decode(item))).toList();
+      });
+    }
   }
 
 //Function
