@@ -57,20 +57,20 @@ class TodoList extends StatefulWidget {
   _TodoListState createState() => new _TodoListState();
 }
 
-Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
+final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
 
 // Widget
 class _TodoListState extends State<TodoList> {
   final TextEditingController _textFieldController = TextEditingController();
   List<Todo> _todos = <Todo>[];
 
-  @override
-  // ignore: must_call_super
   initState() {
-    initApp();
+    super.initState();
+
+    initPage();
   }
 
-  initApp() async {
+  initPage() async {
     loadData();
   }
 
@@ -79,6 +79,19 @@ class _TodoListState extends State<TodoList> {
     return new Scaffold(
       appBar: new AppBar(
         title: new Text('My To-Do List'),
+        actions: <Widget>[
+          Padding(
+              padding: EdgeInsets.only(right: 20.0),
+              child: GestureDetector(
+                onTap: () {
+                  _displayDialog("deleteList");
+                },
+                child: Icon(
+                  Icons.delete_forever,
+                  size: 26.0,
+                ),
+              )),
+        ],
       ),
       //Conditioning
       body: _todos.length != 0
@@ -91,11 +104,12 @@ class _TodoListState extends State<TodoList> {
                 );
               }).toList(),
             )
-          : Text("Nothing to show"),
+          : Center(child: Text("Nothing to show")),
       floatingActionButton: FloatingActionButton(
-          onPressed: () => _displayDialog(),
-          tooltip: 'Add Item',
-          child: Icon(Icons.add)),
+        onPressed: () => _displayDialog("addItem"),
+        tooltip: 'Add Item',
+        child: Icon(Icons.add),
+      ),
     );
   }
 
@@ -104,11 +118,11 @@ class _TodoListState extends State<TodoList> {
     setState(() {
       todo.checked = !todo.checked!;
     });
+    saveData();
   }
 
 //Function
   void _addTodoItem(String? name) {
-    print("name " + name.toString());
     if (name == "") {
       final snackBar = SnackBar(
         content: const Text('Insert To Do Item Properly'),
@@ -138,14 +152,17 @@ class _TodoListState extends State<TodoList> {
     SharedPreferences _prefs = await SharedPreferences.getInstance();
     List<String> spList =
         _todos.map((item) => json.encode(item.toMap())).toList();
-    print(spList);
     await _prefs.setStringList('list', spList);
   }
 
   loadData() async {
-    SharedPreferences _prefs = await SharedPreferences.getInstance();
-    List<String>? spList = _prefs.getStringList('list');
+    SharedPreferences prefs = await _prefs;
+    List<String>? spList = prefs.getStringList('list');
     if (spList == null) {
+      setState(() {
+        _todos = [];
+      });
+      return;
     } else {
       setState(() {
         _todos = spList.map((item) => Todo.fromMap(json.decode(item))).toList();
@@ -153,28 +170,55 @@ class _TodoListState extends State<TodoList> {
     }
   }
 
+  deleteData() async {
+    SharedPreferences prefs = await _prefs;
+    final success = await prefs.remove('list');
+    initPage();
+  }
+
 //Function
-  Future<void> _displayDialog() async {
+  Future<void> _displayDialog(String dialog) async {
     return showDialog<void>(
       context: context,
       barrierDismissible: false, // user must tap button!
       builder: (BuildContext context) {
-        return AlertDialog(
-          title: const Text('Add a new To Do item'),
-          content: TextField(
-            controller: _textFieldController,
-            decoration: const InputDecoration(hintText: 'Type your new To Do'),
-          ),
-          actions: <Widget>[
-            TextButton(
-              child: const Text('Add'),
-              onPressed: () {
-                Navigator.of(context).pop();
-                _addTodoItem(_textFieldController.text);
-              },
-            ),
-          ],
-        );
+        return dialog == "addItem"
+            ? AlertDialog(
+                title: const Text('Add a new To Do item'),
+                content: TextField(
+                  controller: _textFieldController,
+                  decoration:
+                      const InputDecoration(hintText: 'Type your new To Do'),
+                ),
+                actions: <Widget>[
+                  TextButton(
+                    child: const Text('Add'),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      _addTodoItem(_textFieldController.text);
+                    },
+                  ),
+                ],
+              )
+            : AlertDialog(
+                title: const Text('Are you sure to delete list ?'),
+                actions: <Widget>[
+                  TextButton(
+                    child: const Text('Yes'),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      deleteData();
+                    },
+                  ),
+                  TextButton(
+                    child: const Text('No'),
+                    onPressed: () {
+                      Navigator.of(context).pop();
+                      // _addTodoItem(_textFieldController.text);
+                    },
+                  ),
+                ],
+              );
       },
     );
   }
