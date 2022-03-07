@@ -57,16 +57,14 @@ class TodoList extends StatefulWidget {
   _TodoListState createState() => new _TodoListState();
 }
 
-final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
-
 // Widget
 class _TodoListState extends State<TodoList> {
   final TextEditingController _textFieldController = TextEditingController();
   List<Todo> _todos = <Todo>[];
+  final Future<SharedPreferences> _prefs = SharedPreferences.getInstance();
 
   initState() {
     super.initState();
-
     initPage();
   }
 
@@ -81,16 +79,17 @@ class _TodoListState extends State<TodoList> {
         title: new Text('My To-Do List'),
         actions: <Widget>[
           Padding(
-              padding: EdgeInsets.only(right: 20.0),
-              child: GestureDetector(
-                onTap: () {
-                  _displayDialog("deleteList");
-                },
-                child: Icon(
-                  Icons.delete_forever,
-                  size: 26.0,
-                ),
-              )),
+            padding: EdgeInsets.only(right: 20.0),
+            child: GestureDetector(
+              onTap: () {
+                _displayDialog("deleteList");
+              },
+              child: Icon(
+                Icons.delete_forever,
+                size: 26.0,
+              ),
+            ),
+          ),
         ],
       ),
       //Conditioning
@@ -104,7 +103,9 @@ class _TodoListState extends State<TodoList> {
                 );
               }).toList(),
             )
-          : Center(child: Text("Nothing to show")),
+          : Center(
+              child: Text("Nothing to show"),
+            ),
       floatingActionButton: FloatingActionButton(
         onPressed: () => _displayDialog("addItem"),
         tooltip: 'Add Item',
@@ -125,17 +126,8 @@ class _TodoListState extends State<TodoList> {
   void _addTodoItem(String? name) {
     if (name == "") {
       final snackBar = SnackBar(
-        content: const Text('Insert To Do Item Properly'),
-        action: SnackBarAction(
-          label: 'Undo',
-          onPressed: () {
-            // Some code to undo the change.
-          },
-        ),
+        content: const Text('To-Do Item is empty'),
       );
-
-      // Find the ScaffoldMessenger in the widget tree
-      // and use it to show a SnackBar.
       ScaffoldMessenger.of(context).showSnackBar(snackBar);
     } else {
       setState(() {
@@ -149,10 +141,10 @@ class _TodoListState extends State<TodoList> {
   }
 
   saveData() async {
-    SharedPreferences _prefs = await SharedPreferences.getInstance();
+    SharedPreferences prefs = await _prefs;
     List<String> spList =
         _todos.map((item) => json.encode(item.toMap())).toList();
-    await _prefs.setStringList('list', spList);
+    await prefs.setStringList('list', spList);
   }
 
   loadData() async {
@@ -172,7 +164,15 @@ class _TodoListState extends State<TodoList> {
 
   deleteData() async {
     SharedPreferences prefs = await _prefs;
-    final success = await prefs.remove('list');
+    List<String>? spList = prefs.getStringList('list');
+    if (spList == null) {
+      final snackBar = SnackBar(
+        content: const Text('Nothing to be deleted'),
+      );
+      ScaffoldMessenger.of(context).showSnackBar(snackBar);
+    } else
+      SharedPreferences prefs = await _prefs;
+    await prefs.remove('list');
     initPage();
   }
 
@@ -229,6 +229,7 @@ class TodoApp extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return new MaterialApp(
+      debugShowCheckedModeBanner: false,
       theme:
           ThemeData(brightness: Brightness.dark, primaryColor: Colors.blueGrey),
       title: 'Todo list',
